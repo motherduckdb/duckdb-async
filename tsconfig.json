@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "strict": true,
+    "outDir": "./dist",
+    "types": ["node", "jest"]
+  },
+  "include": ["src/*.ts"],
+  "exclude": ["node_modules"]
+}
