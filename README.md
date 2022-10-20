@@ -1,12 +1,12 @@
 # duckdb-async
 
-Promise wrappers for the duckdb Node.JS API
+TypeScript wrappers using Promises for the duckdb Node.JS API
 
 # Overview and Basic Usage
 
 This repository provides an API that wraps the [DuckDb NodeJS API](https://duckdb.org/docs/api/nodejs/overview) using Promises
 instead of callbacks.
-The library is implemented in TypeScript, and includes the existing `duckdb`
+The library is implemented in TypeScript to provide static type checking for TypeScript developers. It includes the existing `duckdb`
 NPM module as a dependency, so it should be possible to write applications
 in TypeScript using only `duckdb-async` as a direct dependency.
 
