@@ -51,6 +51,39 @@ describe("Async API points", () => {
     ]);
   });
 
+  test("basic statement prepare/run/finalize", async () => {
+    const stmt = await db.prepare(
+      "CREATE TABLE foo (txt text, num int, flt double, blb blob)"
+    );
+    await stmt.runSync().finalize();
+  });
+
+  test("Statement.all", async () => {
+    const minVal = 1,
+      maxVal = 10;
+    const stmt = await db.prepare("SELECT * from range(?,?)");
+    const rows = await stmt.all(minVal, maxVal);
+    console.log("rows from Statement.all: ", rows);
+    expect(rows).toEqual([
+      { range: 1 },
+      { range: 2 },
+      { range: 3 },
+      { range: 4 },
+      { range: 5 },
+      { range: 6 },
+      { range: 7 },
+      { range: 8 },
+      { range: 9 },
+    ]);
+  });
+
+  test("prepareSync", async () => {
+    await db
+      .prepareSync("CREATE TABLE foo (txt text, num int, flt double, blb blob)")
+      .runSync()
+      .finalize();
+  });
+
   test("Database.close", async () => {
     await db.close();
   });

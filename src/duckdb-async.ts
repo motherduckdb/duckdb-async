@@ -8,7 +8,7 @@ import * as util from "util";
 
 type Callback<T> = (err: duckdb.DuckDbError | null, res: T) => void;
 
-export { DuckDbError } from "duckdb";
+export { DuckDbError, QueryResult } from "duckdb";
 
 /*
  * Implmentation note:
@@ -28,6 +28,25 @@ function methodPromisify<T extends object, R>(
     methodFn.bind(target)(...args)
   ) as any;
 }
+
+const connAllAsync = methodPromisify<duckdb.Connection, duckdb.TableData>(
+  duckdb.Connection.prototype.all
+);
+const connExecAsync = methodPromisify<duckdb.Connection, void>(
+  duckdb.Connection.prototype.exec
+);
+
+const connPrepareAsync = methodPromisify<duckdb.Connection, duckdb.Statement>(
+  duckdb.Connection.prototype.prepare
+);
+
+const connRunAsync = methodPromisify<duckdb.Connection, duckdb.Statement>(
+  duckdb.Connection.prototype.run
+);
+
+const connUnregisterAsync = methodPromisify<duckdb.Connection, void>(
+  duckdb.Connection.prototype.unregister
+);
 
 export class Connection {
   private conn: duckdb.Connection | null = null;
@@ -54,6 +73,99 @@ export class Connection {
     return new Promise((resolve, reject) => {
       new Connection(db.get_ddb_internal(), resolve, reject);
     });
+  }
+
+  async all(sql: string, ...args: any[]): Promise<duckdb.TableData> {
+    if (!this.conn) {
+      throw new Error("Connection.all: uninitialized connection");
+    }
+    return connAllAsync(this.conn, sql, ...args);
+  }
+
+  /**
+   * Executes the sql query and invokes the callback for each row of result data.
+   * Since promises can only resolve once, this method uses the same callback
+   * based API of the underlying DuckDb NodeJS API
+   * @param sql query to execute
+   * @param args parameters for template query
+   * @returns
+   */
+  each(sql: string, ...args: [...any, Callback<duckdb.RowData>] | []): void {
+    if (!this.conn) {
+      throw new Error("Connection.each: uninitialized connection");
+    }
+    this.conn.each(sql, ...args);
+  }
+
+  /**
+   * Execute one or more SQL statements, without returning results.
+   * @param sql queries or statements to executes (semicolon separated)
+   * @param args parameters if `sql` is a parameterized template
+   * @returns `Promise<void>` that resolves when all statements have been executed.
+   */
+  async exec(sql: string, ...args: any[]): Promise<void> {
+    if (!this.conn) {
+      throw new Error("Connection.exec: uninitialized connection");
+    }
+    return connExecAsync(this.conn, sql, ...args);
+  }
+
+  prepareSync(sql: string, ...args: any[]): Statement {
+    if (!this.conn) {
+      throw new Error("Connection.prepareSync: uninitialized connection");
+    }
+    const ddbStmt = this.conn.prepare(sql, ...(args as any));
+    return Statement.create_internal(ddbStmt);
+  }
+
+  async prepare(sql: string, ...args: any[]): Promise<Statement> {
+    if (!this.conn) {
+      throw new Error("Connection.prepare: uninitialized connection");
+    }
+    const stmt = await connPrepareAsync(this.conn, sql, ...args);
+    return Statement.create_internal(stmt);
+  }
+
+  runSync(sql: string, ...args: any[]): Statement {
+    if (!this.conn) {
+      throw new Error("Connection.runSync: uninitialized connection");
+    }
+    // We need the 'as any' cast here, because run dynamically checks
+    // types of args to determine if a callback function was passed in
+    const ddbStmt = this.conn.run(sql, ...(args as any));
+    return Statement.create_internal(ddbStmt);
+  }
+
+  async run(sql: string, ...args: any[]): Promise<Statement> {
+    if (!this.conn) {
+      throw new Error("Connection.runSync: uninitialized connection");
+    }
+    const stmt = await connRunAsync(this.conn, sql, ...args);
+    return Statement.create_internal(stmt);
+  }
+
+  register(
+    name: string,
+    return_type: string,
+    fun: (...args: any[]) => any
+  ): void {
+    if (!this.conn) {
+      throw new Error("Connection.register: uninitialized connection");
+    }
+    this.conn.register(name, return_type, fun);
+  }
+  async unregister(name: string): Promise<void> {
+    if (!this.conn) {
+      throw new Error("Connection.unregister: uninitialized connection");
+    }
+    return connUnregisterAsync(this.conn, name);
+  }
+
+  stream(sql: any, ...args: any[]): duckdb.QueryResult {
+    if (!this.conn) {
+      throw new Error("Connection.stream: uninitialized connection");
+    }
+    return this.conn.stream(sql, args);
   }
 }
 
@@ -168,6 +280,14 @@ export class Database {
     return dbExecAsync(this.db, sql, ...args);
   }
 
+  prepareSync(sql: string, ...args: any[]): Statement {
+    if (!this.db) {
+      throw new Error("Database.prepareSync: uninitialized database");
+    }
+    const ddbStmt = this.db.prepare(sql, ...(args as any));
+    return Statement.create_internal(ddbStmt);
+  }
+
   async prepare(sql: string, ...args: any[]): Promise<Statement> {
     if (!this.db) {
       throw new Error("Database.prepare: uninitialized database");
@@ -200,13 +320,13 @@ export class Database {
     fun: (...args: any[]) => any
   ): void {
     if (!this.db) {
-      throw new Error("Database.close: uninitialized database");
+      throw new Error("Database.register: uninitialized database");
     }
     this.db.register(name, return_type, fun);
   }
   async unregister(name: string): Promise<void> {
     if (!this.db) {
-      throw new Error("Database.close: uninitialized database");
+      throw new Error("Database.unregister: uninitialized database");
     }
     return dbUnregisterAsync(this.db, name);
   }
@@ -218,6 +338,10 @@ const stmtRunAsync = methodPromisify<duckdb.Statement, void>(
 
 const stmtFinalizeAsync = methodPromisify<duckdb.Statement, void>(
   duckdb.Statement.prototype.finalize
+);
+
+const stmtAllAsync = methodPromisify<duckdb.Statement, duckdb.TableData>(
+  duckdb.Statement.prototype.all
 );
 
 export class Statement {
@@ -239,10 +363,22 @@ export class Statement {
     return new Statement(stmt);
   }
 
-  /*
-    all(...args: [...any, Callback<TableData>] | []): void;
-  each(...args: [...any, Callback<RowData>] | []): void;  
-  */
+  async all(...args: any[]): Promise<duckdb.TableData> {
+    return stmtAllAsync(this.stmt, ...args);
+  }
+
+  /**
+   * Executes the sql query and invokes the callback for each row of result data.
+   * Since promises can only resolve once, this method uses the same callback
+   * based API of the underlying DuckDb NodeJS API
+   * @param args parameters for template query, followed by a NodeJS style
+   *             callback function invoked for each result row.
+   *
+   * @returns
+   */
+  each(...args: [...any, Callback<duckdb.RowData>] | []): void {
+    this.stmt.each(...args);
+  }
 
   /**
    * Call `duckdb.Statement.run` directly without awaiting completion.
