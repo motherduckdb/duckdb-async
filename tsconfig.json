@@ -3,6 +3,7 @@
     "esModuleInterop": true,
     "noImplicitAny": true,
     "strict": true,
+    "declaration": true,
     "outDir": "./dist",
     "types": ["node", "jest"]
   },

@@ -2,7 +2,8 @@
   "name": "duckdb-async",
   "version": "0.1.0",
   "description": "Promise wrappers for DuckDb NodeJS API",
-  "main": "index.js",
+  "main": "dist/duckdb-async.js",
+  "types": "dist/duckd-async.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "jest --config jest.config.json --no-cache"
