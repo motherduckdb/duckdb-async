@@ -11,15 +11,23 @@ type Callback<T> = (err: duckdb.DuckDbError | null, res: T) => void;
 export { DuckDbError } from "duckdb";
 
 /*
- *   Most method implementations are thin wrappers around
- *   a call to the result of `util.promisify(...).bind(...)`.
- *   There's some overhead to constructing these functions on
- *   every method call, but I don't expect it to be a
- *   performance bottleneck.
- *   If this overhead becomes an issue, the internal
- *   definitions of `dbCloseAsync` etc could be moved
- *   out of the method bodies to be standalone functions
+ * Implmentation note:
+ *   Although the method types exposed to users of this library
+ *   are reasonably precise, the unfortunate excessive use of
+ *   `any` in this utility function is because writing a precise
+ *   type for a generic higher order function like
+ *   `util.promisify` is beyond the current capabilities of the
+ *   TypeScript type system.
+ *   See https://github.com/Microsoft/TypeScript/issues/5453
+ *   for detailed discussion.
  */
+function methodPromisify<T extends object, R>(
+  methodFn: (...args: any[]) => any
+): (target: T, ...args: any[]) => Promise<R> {
+  return util.promisify((target: T, ...args: any[]): any =>
+    methodFn.bind(target)(...args)
+  ) as any;
+}
 
 export class Connection {
   private conn: duckdb.Connection | null = null;
@@ -49,50 +57,26 @@ export class Connection {
   }
 }
 
-/*
-const dbCloseAsync = util.promisify(
-  (db: duckdb.Database, callback: Callback<void>) => db.close(callback)
-);
-*/
-
-/*
-const dbAllAsync = util.promisify(
-  (
-    db: duckdb.Database,
-    sql: string,
-    ...args: [...any, Callback<duckdb.TableData>] | []
-  ) => db.all(sql, ...args)
-) as (
-  db: duckdb.Database,
-  sql: string,
-  ...args: any[]
-) => Promise<duckdb.TableData>;
-*/
-
-/*
- * Implmentation note:
- *   Although the method types exposed to users of this library
- *   are reasonably precise, the unfortunate excessive use of
- *   `any` in this utility function is because writing a precise
- *   type for a generic higher order function like
- *   `util.promisify` is beyond the current capabilities of the
- *   TypeScript type system.
- *   See https://github.com/Microsoft/TypeScript/issues/5453
- *   for detailed discussion.
- */
-function methodPromisify<T extends object, R>(
-  methodFn: (...args: any[]) => any
-): (target: T, ...args: any[]) => Promise<R> {
-  return util.promisify((target: T, ...args: any[]): any =>
-    methodFn.bind(target)(...args)
-  ) as any;
-}
-
 const dbCloseAsync = methodPromisify<duckdb.Database, void>(
   duckdb.Database.prototype.close
 );
 const dbAllAsync = methodPromisify<duckdb.Database, duckdb.TableData>(
   duckdb.Database.prototype.all
+);
+const dbExecAsync = methodPromisify<duckdb.Database, void>(
+  duckdb.Database.prototype.exec
+);
+
+const dbPrepareAsync = methodPromisify<duckdb.Database, duckdb.Statement>(
+  duckdb.Database.prototype.prepare
+);
+
+const dbRunAsync = methodPromisify<duckdb.Database, duckdb.Statement>(
+  duckdb.Database.prototype.run
+);
+
+const dbUnregisterAsync = methodPromisify<duckdb.Database, void>(
+  duckdb.Database.prototype.unregister
 );
 
 export class Database {
@@ -132,10 +116,12 @@ export class Database {
     if (!this.db) {
       throw new Error("Database.close: uninitialized database");
     }
-    return dbCloseAsync(this.db);
+    await dbCloseAsync(this.db);
+    this.db = null;
+    return;
   }
 
-  // accessor to get internal duckdb Database object
+  // accessor to get internal duckdb Database object -- internal use only
   get_ddb_internal(): duckdb.Database {
     if (!this.db) {
       throw new Error("Database.get_ddb_internal: uninitialized database");
@@ -149,47 +135,15 @@ export class Database {
 
   async all(sql: string, ...args: any[]): Promise<duckdb.TableData> {
     if (!this.db) {
-      throw new Error("Database.close: uninitialized database");
+      throw new Error("Database.all: uninitialized database");
     }
-    /*
-    const dbAllAsync = util
-      .promisify(duckdb.Database.prototype.all)
-      .bind(this.db) as any;
-    */
-    /*
-    const dbAllAsync = util.promisify(
-      duckdb.Database.prototype.all.bind(this.db)
-    ) as any;
-    */
-
     return dbAllAsync(this.db, sql, ...args);
   }
 
-  /*
-  all(sql: string, ...args: any[]): Promise<duckdb.TableData> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error("Database.all: uninitialized database"));
-      } else {
-        this.db.all(
-          sql,
-          ...args,
-          (err: duckdb.DuckDbError | null, res: duckdb.TableData) => {
-            if (err) {
-              reject(err);
-            }
-            resolve(res);
-          }
-        );
-      }
-    });
-  }
-  */
-
   /**
    * Executes the sql query and invokes the callback for each row of result data.
-   * Since promises can only resolve once, this retains the callback API of the
-   * underlying NodeJS API
+   * Since promises can only resolve once, this method uses the same callback
+   * based API of the underlying DuckDb NodeJS API
    * @param sql query to execute
    * @param args parameters for template query
    * @returns
@@ -201,30 +155,111 @@ export class Database {
     this.db.each(sql, ...args);
   }
 
-  exec(sql: string, ...args: any[]): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error("Database.exec: uninitialized database"));
-      } else {
-        this.db.exec(sql, ...args, (err: duckdb.DuckDbError | null) => {
-          if (err) {
-            reject(err);
-          }
-          resolve();
-        });
-      }
-    });
+  /**
+   * Execute one or more SQL statements, without returning results.
+   * @param sql queries or statements to executes (semicolon separated)
+   * @param args parameters if `sql` is a parameterized template
+   * @returns `Promise<void>` that resolves when all statements have been executed.
+   */
+  async exec(sql: string, ...args: any[]): Promise<void> {
+    if (!this.db) {
+      throw new Error("Database.exec: uninitialized database");
+    }
+    return dbExecAsync(this.db, sql, ...args);
   }
 
-  /*
-  prepare(sql: string, ...args: [...any, Callback<Statement>] | []): Statement;
-  run(sql: string, ...args: [...any, Callback<void>] | []): Statement;
+  async prepare(sql: string, ...args: any[]): Promise<Statement> {
+    if (!this.db) {
+      throw new Error("Database.prepare: uninitialized database");
+    }
+    const stmt = await dbPrepareAsync(this.db, sql, ...args);
+    return Statement.create_internal(stmt);
+  }
+
+  runSync(sql: string, ...args: any[]): Statement {
+    if (!this.db) {
+      throw new Error("Database.runSync: uninitialized database");
+    }
+    // We need the 'as any' cast here, because run dynamically checks
+    // types of args to determine if a callback function was passed in
+    const ddbStmt = this.db.run(sql, ...(args as any));
+    return Statement.create_internal(ddbStmt);
+  }
+
+  async run(sql: string, ...args: any[]): Promise<Statement> {
+    if (!this.db) {
+      throw new Error("Database.runSync: uninitialized database");
+    }
+    const stmt = await dbRunAsync(this.db, sql, ...args);
+    return Statement.create_internal(stmt);
+  }
 
   register(
     name: string,
     return_type: string,
     fun: (...args: any[]) => any
-  ): void;
-  unregister(name: string, callback: Callback<any>): void;
+  ): void {
+    if (!this.db) {
+      throw new Error("Database.close: uninitialized database");
+    }
+    this.db.register(name, return_type, fun);
+  }
+  async unregister(name: string): Promise<void> {
+    if (!this.db) {
+      throw new Error("Database.close: uninitialized database");
+    }
+    return dbUnregisterAsync(this.db, name);
+  }
+}
+
+const stmtRunAsync = methodPromisify<duckdb.Statement, void>(
+  duckdb.Statement.prototype.run
+);
+
+const stmtFinalizeAsync = methodPromisify<duckdb.Statement, void>(
+  duckdb.Statement.prototype.finalize
+);
+
+export class Statement {
+  private stmt: duckdb.Statement;
+
+  /**
+   * Construct an async wrapper from a statement
+   */
+  private constructor(stmt: duckdb.Statement) {
+    this.stmt = stmt;
+  }
+
+  /**
+   * create a Statement object that wraps a duckdb.Statement.
+   * This is intended for internal use only, and should not be called directly.
+   * Use `Database.prepare()` or `Database.run()` to create Statement objects.
+   */
+  static create_internal(stmt: duckdb.Statement): Statement {
+    return new Statement(stmt);
+  }
+
+  /*
+    all(...args: [...any, Callback<TableData>] | []): void;
+  each(...args: [...any, Callback<RowData>] | []): void;  
   */
+
+  /**
+   * Call `duckdb.Statement.run` directly without awaiting completion.
+   * @param args arguments passed to duckdb.Statement.run()
+   * @returns this
+   */
+  runSync(...args: any[]): Statement {
+    this.stmt.run(...(args as any));
+    return this;
+  }
+
+  async run(...args: any[]): Promise<Statement> {
+    await stmtRunAsync(this.stmt, ...args);
+    return this;
+  }
+
+  async finalize(): Promise<void> {
+    return stmtFinalizeAsync(this.stmt);
+  }
 }

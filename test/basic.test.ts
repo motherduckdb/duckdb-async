@@ -1,5 +1,6 @@
 import * as duckdb from "../src/duckdb-async";
 import { Database } from "../src/duckdb-async";
+import fs from "fs";
 
 test("t0 - basic database create", async () => {
   const db = await Database.create(":memory:");
@@ -29,5 +30,28 @@ describe("Async API points", () => {
       );
       expect(err.code).toBe("DUCKDB_NODEJS_ERROR");
     }
+  });
+
+  test("Database.exec -- multiple statements (and verify results)", async () => {
+    var sql = fs.readFileSync("test/support/script.sql", "utf8");
+    await db.exec(sql);
+    const rows = await db.all(
+      "SELECT type, name FROM sqlite_master ORDER BY type, name"
+    );
+    expect(rows).toEqual([
+      { type: "table", name: "grid_key" },
+      { type: "table", name: "grid_utfgrid" },
+      { type: "table", name: "images" },
+      { type: "table", name: "keymap" },
+      { type: "table", name: "map" },
+      { type: "table", name: "metadata" },
+      { type: "view", name: "grid_data" },
+      { type: "view", name: "grids" },
+      { type: "view", name: "tiles" },
+    ]);
+  });
+
+  test("Database.close", async () => {
+    await db.close();
   });
 });
