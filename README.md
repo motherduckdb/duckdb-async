@@ -7,8 +7,7 @@ TypeScript wrappers using Promises for the duckdb Node.JS API
 This repository provides an API that wraps the [DuckDb NodeJS API](https://duckdb.org/docs/api/nodejs/overview) using Promises
 instead of callbacks.
 The library is implemented in TypeScript to provide static type checking for TypeScript developers. It includes the existing `duckdb`
-NPM module as a dependency, so it should be possible to write applications
-in TypeScript using only `duckdb-async` as a direct dependency.
+NPM module as a dependency, so it should be possible to write applications in TypeScript using only `duckdb-async` as a direct dependency.
 
 Basic usage is straightforward. For example:
 
@@ -35,21 +34,15 @@ for each row of the result set. Since promises can only be resolved once, it doe
 method to a promise-based API, so the `each` method still provides the same callback-based interface as the
 original Node.JS API.
 
-# Installation and Versioning
+# Development Note (Oct 2020)
 
-**Note (20Oct2022): As of right now, this library requires a local build of duckdb from source**
+(This is implementation detail, only relevant if you are involved in development or maintenance of this library)
 
-This library depends on the TypeScript bindings that have been recently added to DuckDb.
-These will be available with the npm duckdb package from version 0.5.2 when it is released.
+TypeScript declarations were added to the main DuckDb repository in [This PR](https://github.com/duckdb/duckdb/pull/5025).
+Since these declarations will only be available in the `duckdb` npm package (and corresponding binary builds) once
+5.2.0 is released, this repository currently contains its own copy of the TypeScript declarations for the underlying
+NodeJS API. These are only included as an interim stopgap to enable users to try this library without needing to build DuckDb
+from source while waiting for the 5.2.0 release.
 
-In the meantime, this npm package has a dependency on "duckdb" of the form:
-
-```json
-{
-  "duckdb": "../public-duckdb/tools/nodejs"
-}
-```
-
-which expects a local build of the `duckdb` source tree (from the [main DuckDb github repository](https://github.com/duckdb/duckdb)) in `../public-duckdb`. Note that this must also include a build of the NodeJS bindings for DuckDb.
-
-This library will be updated to change the dependency to the standard duckdb on NPM after duckdb `5.2.0` is released and published to npm.
+For simplicity and clarity for users of this library on compatibility with duckdb releases, versions of this library will
+follow the same version numbers as the underlying `duckdb` npm package.
