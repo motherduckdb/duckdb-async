@@ -51,6 +51,26 @@ describe("Async API points", () => {
     ]);
   });
 
+  test("basic connect and Connection.all", async () => {
+    const minVal = 1,
+      maxVal = 10;
+
+    const conn = await db.connect();
+
+    const rows = await conn.all("SELECT * from range(?,?)", minVal, maxVal);
+    expect(rows).toEqual([
+      { range: 1 },
+      { range: 2 },
+      { range: 3 },
+      { range: 4 },
+      { range: 5 },
+      { range: 6 },
+      { range: 7 },
+      { range: 8 },
+      { range: 9 },
+    ]);
+  });
+
   test("basic statement prepare/run/finalize", async () => {
     const stmt = await db.prepare(
       "CREATE TABLE foo (txt text, num int, flt double, blb blob)"
@@ -63,7 +83,6 @@ describe("Async API points", () => {
       maxVal = 10;
     const stmt = await db.prepare("SELECT * from range(?,?)");
     const rows = await stmt.all(minVal, maxVal);
-    console.log("rows from Statement.all: ", rows);
     expect(rows).toEqual([
       { range: 1 },
       { range: 2 },
