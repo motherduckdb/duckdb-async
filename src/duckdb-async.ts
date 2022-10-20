@@ -8,7 +8,7 @@ import * as util from "util";
 
 type Callback<T> = (err: duckdb.DuckDbError | null, res: T) => void;
 
-export { DuckDbError, QueryResult } from "duckdb";
+export { DuckDbError, QueryResult, RowData, TableData } from "duckdb";
 
 /*
  * Implmentation note:
