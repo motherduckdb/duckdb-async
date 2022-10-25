@@ -14,6 +14,17 @@ describe("Async API points", () => {
     db = await Database.create(":memory:");
   });
 
+  test("Database.create -- read only flag", async () => {
+    try {
+      const roDb = await Database.create(":memory:", duckdb.OPEN_READONLY);
+    } catch (rawErr) {
+      const err = rawErr as duckdb.DuckDbError;
+      expect(err.message).toContain(
+        "Cannot launch in-memory database in read-only mode!"
+      );
+    }
+  });
+
   test("Database.all -- basic query", async () => {
     const results = await db.all("select 42 as a");
     expect(results.length).toBe(1);

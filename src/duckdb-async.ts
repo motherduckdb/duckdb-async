@@ -8,7 +8,18 @@ import * as util from "util";
 
 type Callback<T> = (err: duckdb.DuckDbError | null, res: T) => void;
 
-export { DuckDbError, QueryResult, RowData, TableData } from "duckdb";
+export {
+  DuckDbError,
+  QueryResult,
+  RowData,
+  TableData,
+  OPEN_CREATE,
+  OPEN_FULLMUTEX,
+  OPEN_PRIVATECACHE,
+  OPEN_READONLY,
+  OPEN_READWRITE,
+  OPEN_SHAREDCACHE,
+} from "duckdb";
 
 /*
  * Implmentation note:
@@ -196,10 +207,11 @@ export class Database {
 
   private constructor(
     path: string,
+    accessMode: number,
     resolve: (db: Database) => void,
     reject: (reason: any) => void
   ) {
-    this.db = new duckdb.Database(path, (err, res) => {
+    this.db = new duckdb.Database(path, accessMode, (err, res) => {
       if (err) {
         reject(err);
       }
@@ -218,9 +230,10 @@ export class Database {
    * @param path path to database file to open, or ":memory:"
    * @returns a promise that resolves to newly created Database object
    */
-  static create(path: string): Promise<Database> {
+  static create(path: string, accessMode?: number): Promise<Database> {
+    const trueAccessMode = accessMode ?? duckdb.OPEN_READWRITE; // defaults to OPEN_READWRITE
     return new Promise((resolve, reject) => {
-      new Database(path, resolve, reject);
+      new Database(path, trueAccessMode, resolve, reject);
     });
   }
 
