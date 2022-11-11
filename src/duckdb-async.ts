@@ -55,8 +55,8 @@ const connRunAsync = methodPromisify<duckdb.Connection, duckdb.Statement>(
   duckdb.Connection.prototype.run
 );
 
-const connUnregisterAsync = methodPromisify<duckdb.Connection, void>(
-  duckdb.Connection.prototype.unregister
+const connUnregisterUdfAsync = methodPromisify<duckdb.Connection, void>(
+  duckdb.Connection.prototype.unregister_udf
 );
 
 export class Connection {
@@ -155,21 +155,21 @@ export class Connection {
     return Statement.create_internal(stmt);
   }
 
-  register(
+  register_udf(
     name: string,
     return_type: string,
     fun: (...args: any[]) => any
   ): void {
     if (!this.conn) {
-      throw new Error("Connection.register: uninitialized connection");
+      throw new Error("Connection.register_udf: uninitialized connection");
     }
-    this.conn.register(name, return_type, fun);
+    this.conn.register_udf(name, return_type, fun);
   }
-  async unregister(name: string): Promise<void> {
+  async unregister_udf(name: string): Promise<void> {
     if (!this.conn) {
-      throw new Error("Connection.unregister: uninitialized connection");
+      throw new Error("Connection.unregister_udf: uninitialized connection");
     }
-    return connUnregisterAsync(this.conn, name);
+    return connUnregisterUdfAsync(this.conn, name);
   }
 
   stream(sql: any, ...args: any[]): duckdb.QueryResult {
@@ -198,8 +198,8 @@ const dbRunAsync = methodPromisify<duckdb.Database, duckdb.Statement>(
   duckdb.Database.prototype.run
 );
 
-const dbUnregisterAsync = methodPromisify<duckdb.Database, void>(
-  duckdb.Database.prototype.unregister
+const dbUnregisterUdfAsync = methodPromisify<duckdb.Database, void>(
+  duckdb.Database.prototype.unregister_udf
 );
 
 export class Database {
@@ -327,7 +327,7 @@ export class Database {
     return Statement.create_internal(stmt);
   }
 
-  register(
+  register_udf(
     name: string,
     return_type: string,
     fun: (...args: any[]) => any
@@ -335,13 +335,13 @@ export class Database {
     if (!this.db) {
       throw new Error("Database.register: uninitialized database");
     }
-    this.db.register(name, return_type, fun);
+    this.db.register_udf(name, return_type, fun);
   }
-  async unregister(name: string): Promise<void> {
+  async unregister_udf(name: string): Promise<void> {
     if (!this.db) {
       throw new Error("Database.unregister: uninitialized database");
     }
-    return dbUnregisterAsync(this.db, name);
+    return dbUnregisterUdfAsync(this.db, name);
   }
 }
 

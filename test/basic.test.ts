@@ -114,6 +114,17 @@ describe("Async API points", () => {
       .finalize();
   });
 
+  test("ternary int udf", async () => {
+    await db.register_udf(
+      "udf",
+      "integer",
+      (x: number, y: number, z: number) => x + y + z
+    );
+    const rows = await db.all("select udf(21, 20, 1) v");
+    expect(rows).toEqual([{ v: 42 }]);
+    await db.unregister_udf("udf");
+  });
+
   test("Database.close", async () => {
     await db.close();
   });
