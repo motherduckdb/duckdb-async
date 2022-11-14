@@ -33,16 +33,3 @@ A notable exception is the `each` methods on these classes. The `each` method in
 for each row of the result set. Since promises can only be resolved once, it doesn't make sense to convert this
 method to a promise-based API, so the `each` method still provides the same callback-based interface as the
 original Node.JS API.
-
-# Development Note (Oct 2020)
-
-(This is implementation detail, only relevant if you are involved in development or maintenance of this library)
-
-TypeScript declarations were added to the main DuckDb repository in [This PR](https://github.com/duckdb/duckdb/pull/5025).
-Since these declarations will only be available in the `duckdb` npm package (and corresponding binary builds) once
-5.2.0 is released, this repository currently contains its own copy of the TypeScript declarations for the underlying
-NodeJS API. These are only included as an interim stopgap to enable users to try this library without needing to build DuckDb
-from source while waiting for the 5.2.0 release.
-
-For simplicity and clarity for users of this library on compatibility with duckdb releases, versions of this library will
-follow the same version numbers as the underlying `duckdb` npm package.
