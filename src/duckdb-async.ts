@@ -176,7 +176,7 @@ export class Connection {
     if (!this.conn) {
       throw new Error("Connection.stream: uninitialized connection");
     }
-    return this.conn.stream(sql, args);
+    return this.conn.stream(sql, ...args);
   }
 }
 

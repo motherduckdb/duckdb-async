@@ -125,6 +125,18 @@ describe("Async API points", () => {
     await db.unregister_udf("udf");
   });
 
+  test("basic stream test", async () => {
+    const total = 1000;
+
+    let retrieved = 0;
+    const conn = await db.connect();
+    const stream = conn.stream("SELECT * FROM range(0, ?)", total);
+    for await (const row of stream) {
+      retrieved++;
+    }
+    expect(total).toEqual(retrieved);
+  });
+
   test("Database.close", async () => {
     await db.close();
   });
