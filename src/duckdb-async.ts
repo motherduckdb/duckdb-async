@@ -43,6 +43,11 @@ function methodPromisify<T extends object, R>(
 const connAllAsync = methodPromisify<duckdb.Connection, duckdb.TableData>(
   duckdb.Connection.prototype.all
 );
+
+const connArrowIPCAll = methodPromisify<duckdb.Connection, duckdb.ArrowArray>(
+  duckdb.Connection.prototype.arrowIPCAll
+);
+
 const connExecAsync = methodPromisify<duckdb.Connection, void>(
   duckdb.Connection.prototype.exec
 );
@@ -57,6 +62,14 @@ const connRunAsync = methodPromisify<duckdb.Connection, duckdb.Statement>(
 
 const connUnregisterUdfAsync = methodPromisify<duckdb.Connection, void>(
   duckdb.Connection.prototype.unregister_udf
+);
+
+const connRegisterBufferAsync = methodPromisify<duckdb.Connection, void>(
+  duckdb.Connection.prototype.register_buffer
+);
+
+const connUnregisterBufferAsync = methodPromisify<duckdb.Connection, void>(
+  duckdb.Connection.prototype.unregister_buffer
 );
 
 export class Connection {
@@ -91,6 +104,13 @@ export class Connection {
       throw new Error("Connection.all: uninitialized connection");
     }
     return connAllAsync(this.conn, sql, ...args);
+  }
+
+  async arrowIPCAll(sql: string, ...args: any[]): Promise<duckdb.ArrowArray> {
+    if (!this.conn) {
+      throw new Error("Connection.arrowIPCAll: uninitialized connection");
+    }
+    return connArrowIPCAll(this.conn, sql, ...args);
   }
 
   /**
@@ -171,12 +191,47 @@ export class Connection {
     }
     return connUnregisterUdfAsync(this.conn, name);
   }
+  register_bulk(
+    name: string,
+    return_type: string,
+    fun: (...args: any[]) => any
+  ): void {
+    if (!this.conn) {
+      throw new Error("Connection.register_bulk: uninitialized connection");
+    }
+    this.conn.register_bulk(name, return_type, fun);
+  }
 
   stream(sql: any, ...args: any[]): duckdb.QueryResult {
     if (!this.conn) {
       throw new Error("Connection.stream: uninitialized connection");
     }
     return this.conn.stream(sql, ...args);
+  }
+
+  arrowIPCStream(sql: any, ...args: any[]): duckdb.IpcResultStreamIterator {
+    if (!this.conn) {
+      throw new Error("Connection.arrowIPCStream: uninitialized connection");
+    }
+    return this.conn.arrowIPCStream(sql, ...args);
+  }
+
+  register_buffer(
+    name: string,
+    array: duckdb.ArrowIterable,
+    force: boolean
+  ): Promise<void> {
+    if (!this.conn) {
+      throw new Error("Connection.register_buffer: uninitialized connection");
+    }
+    return connRegisterBufferAsync(this.conn, name, array, force);
+  }
+
+  unregister_buffer(name: string): Promise<void> {
+    if (!this.conn) {
+      throw new Error("Connection.unregister_buffer: uninitialized connection");
+    }
+    return connUnregisterBufferAsync(this.conn, name);
   }
 }
 
@@ -186,6 +241,10 @@ const dbCloseAsync = methodPromisify<duckdb.Database, void>(
 const dbAllAsync = methodPromisify<duckdb.Database, duckdb.TableData>(
   duckdb.Database.prototype.all
 );
+const dbArrowIPCAll = methodPromisify<duckdb.Database, duckdb.ArrowArray>(
+  duckdb.Database.prototype.arrowIPCAll
+);
+
 const dbExecAsync = methodPromisify<duckdb.Database, void>(
   duckdb.Database.prototype.exec
 );
@@ -200,6 +259,26 @@ const dbRunAsync = methodPromisify<duckdb.Database, duckdb.Statement>(
 
 const dbUnregisterUdfAsync = methodPromisify<duckdb.Database, void>(
   duckdb.Database.prototype.unregister_udf
+);
+
+const dbSerializeAsync = methodPromisify<duckdb.Database, void>(
+  duckdb.Database.prototype.serialize
+);
+
+const dbParallelizeAsync = methodPromisify<duckdb.Database, void>(
+  duckdb.Database.prototype.parallelize
+);
+
+const dbWaitAsync = methodPromisify<duckdb.Database, void>(
+  duckdb.Database.prototype.wait
+);
+
+const dbRegisterBufferAsync = methodPromisify<duckdb.Database, void>(
+  duckdb.Database.prototype.register_buffer
+);
+
+const dbUnregisterBufferAsync = methodPromisify<duckdb.Database, void>(
+  duckdb.Database.prototype.unregister_buffer
 );
 
 export class Database {
@@ -263,6 +342,13 @@ export class Database {
       throw new Error("Database.all: uninitialized database");
     }
     return dbAllAsync(this.db, sql, ...args);
+  }
+
+  async arrowIPCAll(sql: string, ...args: any[]): Promise<duckdb.ArrowArray> {
+    if (!this.db) {
+      throw new Error("Database.arrowIPCAll: uninitialized connection");
+    }
+    return dbArrowIPCAll(this.db, sql, ...args);
   }
 
   /**
@@ -343,6 +429,80 @@ export class Database {
     }
     return dbUnregisterUdfAsync(this.db, name);
   }
+
+  stream(sql: any, ...args: any[]): duckdb.QueryResult {
+    if (!this.db) {
+      throw new Error("Database.stream: uninitialized database");
+    }
+    return this.db.stream(sql, ...args);
+  }
+
+  arrowIPCStream(
+    sql: any,
+    ...args: any[]
+  ): Promise<duckdb.IpcResultStreamIterator> {
+    if (!this.db) {
+      throw new Error("Database.arrowIPCStream: uninitialized database");
+    }
+    return this.db.arrowIPCStream(sql, ...args);
+  }
+
+  serialize(): Promise<void> {
+    if (!this.db) {
+      throw new Error("Database.serialize: uninitialized database");
+    }
+    return dbSerializeAsync(this.db);
+  }
+
+  parallelize(): Promise<void> {
+    if (!this.db) {
+      throw new Error("Database.parallelize: uninitialized database");
+    }
+    return dbParallelizeAsync(this.db);
+  }
+
+  wait(): Promise<void> {
+    if (!this.db) {
+      throw new Error("Database.wait: uninitialized database");
+    }
+    return dbWaitAsync(this.db);
+  }
+
+  interrupt(): void {
+    if (!this.db) {
+      throw new Error("Database.interrupt: uninitialized database");
+    }
+    return this.db.interrupt();
+  }
+
+  register_buffer(
+    name: string,
+    array: duckdb.ArrowIterable,
+    force: boolean
+  ): Promise<void> {
+    if (!this.db) {
+      throw new Error("Database.register_buffer: uninitialized database");
+    }
+    return dbRegisterBufferAsync(this.db, name, array, force);
+  }
+
+  unregister_buffer(name: string): Promise<void> {
+    if (!this.db) {
+      throw new Error("Database.unregister_buffer: uninitialized database");
+    }
+    return dbUnregisterBufferAsync(this.db, name);
+  }
+
+  registerReplacementScan(
+    replacementScan: duckdb.ReplacementScanCallback
+  ): Promise<void> {
+    if (!this.db) {
+      throw new Error(
+        "Database.registerReplacementScan: uninitialized database"
+      );
+    }
+    return this.db.registerReplacementScan(replacementScan);
+  }
 }
 
 const stmtRunAsync = methodPromisify<duckdb.Statement, void>(
@@ -356,6 +516,11 @@ const stmtFinalizeAsync = methodPromisify<duckdb.Statement, void>(
 const stmtAllAsync = methodPromisify<duckdb.Statement, duckdb.TableData>(
   duckdb.Statement.prototype.all
 );
+
+const stmtArrowIPCAllAsync = methodPromisify<
+  duckdb.Statement,
+  duckdb.ArrowArray
+>(duckdb.Statement.prototype.arrowIPCAll);
 
 export class Statement {
   private stmt: duckdb.Statement;
@@ -378,6 +543,9 @@ export class Statement {
 
   async all(...args: any[]): Promise<duckdb.TableData> {
     return stmtAllAsync(this.stmt, ...args);
+  }
+  async arrowIPCAll(...args: any[]): Promise<duckdb.ArrowArray> {
+    return stmtArrowIPCAllAsync(this.stmt, ...args);
   }
 
   /**

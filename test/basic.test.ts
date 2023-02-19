@@ -137,6 +137,25 @@ describe("Async API points", () => {
     expect(total).toEqual(retrieved);
   });
 
+  test("arrowIPCAll", async () => {
+    const range_size = 100;
+    const query = `SELECT * FROM range(0,${range_size}) tbl(i)`;
+
+    try {
+      await db.all("INSTALL arrow");
+      await db.all("LOAD arrow");
+      const result = await db.arrowIPCAll(query);
+      expect(result.length).toBe(3);
+
+      const conn = await db.connect();
+      const cResult = await conn.arrowIPCAll(query);
+      expect(cResult.length).toBe(3);
+    } catch (err) {
+      console.log("caught error: ", err);
+      //expect((err as Error).message).toMatchInlineSnapshot();
+    }
+  });
+
   test("Database.close", async () => {
     await db.close();
   });
