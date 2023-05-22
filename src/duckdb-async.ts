@@ -209,7 +209,10 @@ export class Connection {
     return this.conn.stream(sql, ...args);
   }
 
-  arrowIPCStream(sql: any, ...args: any[]): duckdb.IpcResultStreamIterator {
+  arrowIPCStream(
+    sql: any,
+    ...args: any[]
+  ): Promise<duckdb.IpcResultStreamIterator> {
     if (!this.conn) {
       throw new Error("Connection.arrowIPCStream: uninitialized connection");
     }
