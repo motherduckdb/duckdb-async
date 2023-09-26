@@ -4,6 +4,7 @@
  *
  */
 import * as duckdb from "duckdb";
+import { ColumnInfo, TypeInfo } from "duckdb";
 import * as util from "util";
 
 type Callback<T> = (err: duckdb.DuckDbError | null, res: T) => void;
@@ -581,5 +582,9 @@ export class Statement {
 
   async finalize(): Promise<void> {
     return stmtFinalizeAsync(this.stmt);
+  }
+
+  columns(): ColumnInfo[] {
+    return this.stmt.columns();
   }
 }

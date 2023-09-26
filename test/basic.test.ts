@@ -107,6 +107,14 @@ describe("Async API points", () => {
     ]);
   });
 
+  test("Statement.columns", async () => {
+    const stmt = await db.prepare(
+      "SELECT * EXCLUDE(medium_enum, large_enum) FROM test_all_types()"
+    );
+    const cols = stmt.columns();
+    expect(cols).toMatchSnapshot();
+  });
+
   test("prepareSync", async () => {
     await db
       .prepareSync("CREATE TABLE foo (txt text, num int, flt double, blb blob)")
