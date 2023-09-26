@@ -70,15 +70,15 @@ describe("Async API points", () => {
 
     const rows = await conn.all("SELECT * from range(?,?)", minVal, maxVal);
     expect(rows).toEqual([
-      { range: 1 },
-      { range: 2 },
-      { range: 3 },
-      { range: 4 },
-      { range: 5 },
-      { range: 6 },
-      { range: 7 },
-      { range: 8 },
-      { range: 9 },
+      { range: 1n },
+      { range: 2n },
+      { range: 3n },
+      { range: 4n },
+      { range: 5n },
+      { range: 6n },
+      { range: 7n },
+      { range: 8n },
+      { range: 9n },
     ]);
   });
 
@@ -95,15 +95,15 @@ describe("Async API points", () => {
     const stmt = await db.prepare("SELECT * from range(?,?)");
     const rows = await stmt.all(minVal, maxVal);
     expect(rows).toEqual([
-      { range: 1 },
-      { range: 2 },
-      { range: 3 },
-      { range: 4 },
-      { range: 5 },
-      { range: 6 },
-      { range: 7 },
-      { range: 8 },
-      { range: 9 },
+      { range: 1n },
+      { range: 2n },
+      { range: 3n },
+      { range: 4n },
+      { range: 5n },
+      { range: 6n },
+      { range: 7n },
+      { range: 8n },
+      { range: 9n },
     ]);
   });
 
