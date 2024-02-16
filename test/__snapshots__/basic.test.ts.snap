@@ -45,6 +45,13 @@ exports[`Async API points Statement.columns 1`] = `
     },
   },
   {
+    "name": "uhugeint",
+    "type": {
+      "id": "UHUGEINT",
+      "sql_type": "UHUGEINT",
+    },
+  },
+  {
     "name": "utinyint",
     "type": {
       "id": "UTINYINT",

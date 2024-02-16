@@ -25,6 +25,14 @@ describe("Async API points", () => {
     }
   });
 
+  test("Database.create -- with record arguments", async () => {
+    const rwOptsDb = await Database.create(":memory:", {
+      access_mode: "READ_WRITE",
+      max_memory: "512MB",
+      threads: "4",
+    });
+  });
+
   test("Database.all -- basic query", async () => {
     const results = await db.all("select 42 as a");
     expect(results.length).toBe(1);

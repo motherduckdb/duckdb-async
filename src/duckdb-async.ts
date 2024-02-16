@@ -290,7 +290,7 @@ export class Database {
 
   private constructor(
     path: string,
-    accessMode: number,
+    accessMode: number | Record<string, string>,
     resolve: (db: Database) => void,
     reject: (reason: any) => void
   ) {
@@ -313,7 +313,10 @@ export class Database {
    * @param path path to database file to open, or ":memory:"
    * @returns a promise that resolves to newly created Database object
    */
-  static create(path: string, accessMode?: number): Promise<Database> {
+  static create(
+    path: string,
+    accessMode?: number | Record<string, string>
+  ): Promise<Database> {
     const trueAccessMode = accessMode ?? duckdb.OPEN_READWRITE; // defaults to OPEN_READWRITE
     return new Promise((resolve, reject) => {
       new Database(path, trueAccessMode, resolve, reject);
