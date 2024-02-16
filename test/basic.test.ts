@@ -90,6 +90,39 @@ describe("Async API points", () => {
     ]);
   });
 
+  test("basic connect and Connection.close", async () => {
+    const minVal = 1,
+      maxVal = 10;
+
+    const conn = await db.connect();
+
+    const rows = await conn.all("SELECT * from range(?,?)", minVal, maxVal);
+    expect(rows).toEqual([
+      { range: 1n },
+      { range: 2n },
+      { range: 3n },
+      { range: 4n },
+      { range: 5n },
+      { range: 6n },
+      { range: 7n },
+      { range: 8n },
+      { range: 9n },
+    ]);
+
+    await conn.close();
+
+    try {
+      const nextRows = await conn.all(
+        "SELECT * from range(?,?)",
+        minVal,
+        maxVal
+      );
+    } catch (rawErr) {
+      const err = rawErr as duckdb.DuckDbError;
+      expect(err.message).toContain("uninitialized connection");
+    }
+  });
+
   test("basic statement prepare/run/finalize", async () => {
     const stmt = await db.prepare(
       "CREATE TABLE foo (txt text, num int, flt double, blb blob)"

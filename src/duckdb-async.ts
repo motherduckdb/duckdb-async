@@ -73,6 +73,10 @@ const connUnregisterBufferAsync = methodPromisify<duckdb.Connection, void>(
   duckdb.Connection.prototype.unregister_buffer
 );
 
+const connCloseAsync = methodPromisify<duckdb.Connection, void>(
+  duckdb.Connection.prototype.close
+);
+
 export class Connection {
   private conn: duckdb.Connection | null = null;
 
@@ -236,6 +240,15 @@ export class Connection {
       throw new Error("Connection.unregister_buffer: uninitialized connection");
     }
     return connUnregisterBufferAsync(this.conn, name);
+  }
+
+  async close(): Promise<void> {
+    if (!this.conn) {
+      throw new Error("Connection.close: uninitialized connection");
+    }
+    await connCloseAsync(this.conn);
+    this.conn = null;
+    return;
   }
 }
 
