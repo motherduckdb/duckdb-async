@@ -294,7 +294,11 @@ export class Database {
     resolve: (db: Database) => void,
     reject: (reason: any) => void
   ) {
-    this.db = new duckdb.Database(path, accessMode, (err, res) => {
+    const config = {
+      access_mode: accessMode == duckdb.OPEN_READONLY ? "read_only" : "read_write",
+      duckdb_api: 'nodejs-async'
+    };
+    this.db = new duckdb.Database(path, config, (err, res) => {
       if (err) {
         reject(err);
       }
