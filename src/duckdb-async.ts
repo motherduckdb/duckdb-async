@@ -45,6 +45,10 @@ const connAllAsync = methodPromisify<duckdb.Connection, duckdb.TableData>(
   duckdb.Connection.prototype.all
 );
 
+const connCloseAsync = methodPromisify<duckdb.Connection, void>(
+  duckdb.Connection.prototype.close
+);
+
 const connArrowIPCAll = methodPromisify<duckdb.Connection, duckdb.ArrowArray>(
   duckdb.Connection.prototype.arrowIPCAll
 );
@@ -98,6 +102,15 @@ export class Connection {
     return new Promise((resolve, reject) => {
       new Connection(db.get_ddb_internal(), resolve, reject);
     });
+  }
+
+  async close(): Promise<void> {
+    if (!this.conn) {
+      throw new Error("Connection.close: uninitialized connection");
+    }
+    await connCloseAsync(this.conn);
+    this.conn = null;
+    return;
   }
 
   async all(sql: string, ...args: any[]): Promise<duckdb.TableData> {
