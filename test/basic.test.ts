@@ -31,6 +31,23 @@ describe("Async API points", () => {
       max_memory: "512MB",
       threads: "4",
     });
+    const user_agent = await rwOptsDb.all("PRAGMA user_agent");
+    expect(user_agent[0]["user_agent"]).toMatch(/duckdb\/[^ ]* nodejs-async/);
+  });
+
+  test("Database.create -- explicit numeric read/write flag", async () => {
+    const rwDb = await Database.create(":memory:", duckdb.OPEN_READWRITE);
+    await rwDb.exec("CREATE TABLE foo (txt text, num int, flt double, blb blob)");
+    const empty_result = await rwDb.all("SELECT * FROM foo");
+    expect(empty_result.length).toBe(0);
+    const user_agent = await rwDb.all("PRAGMA user_agent");
+    expect(user_agent[0]["user_agent"]).toMatch(/duckdb\/[^ ]* nodejs-async/);
+  });
+
+  test("Database.create -- user agent", async () => {
+    const rwDb = await Database.create(":memory:");
+    const user_agent = await rwDb.all("PRAGMA user_agent");
+    expect(user_agent[0]["user_agent"]).toMatch(/duckdb\/[^ ]* nodejs-async/);
   });
 
   test("Database.all -- basic query", async () => {
