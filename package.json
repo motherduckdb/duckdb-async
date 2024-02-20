@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/motherduckdb/duckdb-async#readme",
   "dependencies": {
-    "duckdb": "0.9.3-dev3.0"
+    "duckdb": "0.10.0"
   },
   "devDependencies": {
     "@types/jest": "^29.2.0",
