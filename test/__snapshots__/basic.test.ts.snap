@@ -431,5 +431,81 @@ exports[`Async API points Statement.columns 1`] = `
       "sql_type": "UNION("name" VARCHAR, age SMALLINT)",
     },
   },
+  {
+    "name": "fixed_int_array",
+    "type": {
+      "id": "ARRAY",
+      "sql_type": "INTEGER[3]",
+    },
+  },
+  {
+    "name": "fixed_varchar_array",
+    "type": {
+      "id": "ARRAY",
+      "sql_type": "VARCHAR[3]",
+    },
+  },
+  {
+    "name": "fixed_nested_int_array",
+    "type": {
+      "id": "ARRAY",
+      "sql_type": "INTEGER[3][3]",
+    },
+  },
+  {
+    "name": "fixed_nested_varchar_array",
+    "type": {
+      "id": "ARRAY",
+      "sql_type": "VARCHAR[3][3]",
+    },
+  },
+  {
+    "name": "fixed_struct_array",
+    "type": {
+      "id": "ARRAY",
+      "sql_type": "STRUCT(a INTEGER, b VARCHAR)[3]",
+    },
+  },
+  {
+    "name": "struct_of_fixed_array",
+    "type": {
+      "children": [
+        {
+          "name": "a",
+          "type": {
+            "id": "ARRAY",
+            "sql_type": "INTEGER[3]",
+          },
+        },
+        {
+          "name": "b",
+          "type": {
+            "id": "ARRAY",
+            "sql_type": "VARCHAR[3]",
+          },
+        },
+      ],
+      "id": "STRUCT",
+      "sql_type": "STRUCT(a INTEGER[3], b VARCHAR[3])",
+    },
+  },
+  {
+    "name": "fixed_array_of_int_list",
+    "type": {
+      "id": "ARRAY",
+      "sql_type": "INTEGER[][3]",
+    },
+  },
+  {
+    "name": "list_of_fixed_int_array",
+    "type": {
+      "child": {
+        "id": "ARRAY",
+        "sql_type": "INTEGER[3]",
+      },
+      "id": "LIST",
+      "sql_type": "INTEGER[3][]",
+    },
+  },
 ]
 `;
