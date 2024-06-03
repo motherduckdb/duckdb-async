@@ -1,6 +1,6 @@
 {
   "name": "duckdb-async",
-  "version": "0.10.2",
+  "version": "1.0.0",
   "description": "Promise wrappers for DuckDb NodeJS API",
   "main": "dist/duckdb-async.js",
   "types": "dist/duckdb-async.d.ts",
