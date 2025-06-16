@@ -1,3 +1,6 @@
+> [!WARNING]
+> The original DuckDB <> Node.js bindings in https://github.com/duckdb/duckdb-node are deprecated in favor of the new and shiny `@duckdb/node-api` package. Currently, the plan is to release `duckdb-node` as well as `duckdb-async` for the last time for the DuckDB 1.4.x (~Fall 2025) series but *not* for the DuckDB 1.5.x series (~Early 2026) any more.
+
 # duckdb-async
 
 TypeScript wrappers using Promises for the duckdb Node.JS API
