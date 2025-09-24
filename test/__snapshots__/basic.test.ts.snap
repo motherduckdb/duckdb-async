@@ -80,10 +80,10 @@ exports[`Async API points Statement.columns 1`] = `
     },
   },
   {
-    "name": "varint",
+    "name": "bignum",
     "type": {
-      "id": "VARINT",
-      "sql_type": "VARINT",
+      "id": "BIGNUM",
+      "sql_type": "BIGNUM",
     },
   },
   {
